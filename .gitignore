@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output (the exe ships via GitHub Releases, not git)
+build/
+
+# Per-user runtime data and SECRETS — never publish these
+auth_cache/
+config/
+data/
+*.key
+*.key.txt
+kenway-previous.exe
+*.log
+
+# Separate backend project (has its own repo / secrets)
+kenway-api/
+
+.DS_Store
+Thumbs.db
