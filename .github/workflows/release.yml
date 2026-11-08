@@ -43,6 +43,13 @@ jobs:
           $v = "${{ github.ref_name }}" -replace '^v',''
           @{ version = $v } | ConvertTo-Json | Set-Content build/manifest.json
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/kenway.iss'
+
       - name: Publish release
         shell: pwsh
         env:
@@ -53,5 +60,6 @@ jobs:
             build/plugins.zip `
             build/launcher.ps1 `
             build/manifest.json `
+            installer/Output/Kenway-Setup.exe `
             --title "${{ github.ref_name }}" `
             --notes "Automated release ${{ github.ref_name }}"
