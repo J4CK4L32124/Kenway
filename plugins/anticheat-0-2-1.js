@@ -104,7 +104,7 @@ module.exports = (api) => {
         name: 'anticheat',
         displayName: 'Cheater Detector',
         prefix: '§cAC',
-        version: '0.2.1',
+        version: '0.2.2',
         author: 'Hexze',
         description: 'Advanced cheater detector system (Inspired by github.com/PugrillaDev)',
     });
@@ -822,7 +822,15 @@ const CHECKS = {
             if (twoBlocks) this.api.debugLog(`[EagleA] ${player.username} placed two blocks in one shift while bridging straight`);
             const fixedRelease = newRelease && detectFixedReleaseDelay(player);
             if (fixedRelease) this.api.debugLog(`[EagleA] ${player.username} released sneak the same delay after placing, ${RELEASE_STREAK_BLOCKS} ${player.releaseKind} blocks in a row`);
-            if (doubleShift || twoBlocks || fixedRelease) {
+            // Mellow raises an Eagle flag only while the player is actually
+            // bridging: looking steeply down (pitch >= 70) with a block in hand.
+            // Our active patterns gated this loosely (double-shift at pitch >= 45,
+            // two-blocks not at all), so normal sneaking by a ledge could trip
+            // them. Require Mellow's exact guard at flag time. pitch is reliably
+            // synced; isHoldingBlock() is false when the held item is unknown,
+            // so an uncertain item suppresses rather than false-flags.
+            const eagleBridging = player.isHoldingBlock() && player.pitch >= 70;
+            if (eagleBridging && (doubleShift || twoBlocks || fixedRelease)) {
                 player.violations.EagleA = Math.max(player.violations.EagleA, config.vl);
                 if (this.shouldAlert(player, 'EagleA', config)) {
                     const pattern = doubleShift ? 'double shift (diagonal)' : (twoBlocks ? 'two blocks in one shift' : `same release timing, ${RELEASE_STREAK_BLOCKS} blocks`);
