@@ -92,6 +92,13 @@
 // estimate - none of this has been tuned against a live game yet. Expect to
 // adjust vl/cooldown/the raw constants after watching it run for real.
 
+// Friendly names shown in flag alerts. The internal check key (used for config
+// paths checks.<key>.*, violation tracking and emitted events) stays unchanged;
+// only the chat label changes. Anything without an entry shows its key as-is.
+const CHECK_LABELS = {
+    EagleA: 'Legit Scaffold',
+};
+
 module.exports = (api) => {
     api.metadata({
         name: 'anticheat',
@@ -2282,7 +2289,8 @@ class AnticheatSystem {
 
         const alertsEnabled = this.api.config.get(`checks.${checkName}.enabled`);
         if (alertsEnabled) {
-            const base = `${this.api.getPrefix()} ${displayName} §7flagged §5${checkName} §8(§7VL: ${vl}§8)${detail ? ` §8- §7${detail}` : ''}`;
+            const label = CHECK_LABELS[checkName] || checkName;
+            const base = `${this.api.getPrefix()} ${displayName} §7flagged §5${label} §8(§7VL: ${vl}§8)${detail ? ` §8- §7${detail}` : ''}`;
             if (this.api.config.get('wdr.enabled') !== false) {
                 // Clickable [WDR] button: runs the configured report command on Hypixel.
                 const template = this.api.config.get('wdr.command') || '/wdr {player}';
