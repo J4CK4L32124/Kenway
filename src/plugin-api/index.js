@@ -665,6 +665,26 @@ class PluginAPI {
         };
     }
     
+    // Set a config value on ANOTHER loaded plugin, going through a Core seeded
+    // with that plugin's own schema so encrypted fields (e.g. API keys) are
+    // written in the right form and read back correctly. Used by convenience
+    // commands such as /kenway setallkey. Returns { present, ok }: present is
+    // false when the target plugin isn't loaded.
+    _setPluginConfigValue(targetPluginName, key, value) {
+        const target = this.loadedPlugins.find(p => p.name === targetPluginName);
+        if (!target || !target.metadata || !target.metadata.path) {
+            return { present: false };
+        }
+        try {
+            const core = new Core(this.proxy, target.metadata);
+            core.configSchema = target.metadata.configSchema;
+            const ok = core.config.set(key, value);
+            return { present: true, ok };
+        } catch (e) {
+            return { present: true, ok: false, error: e.message };
+        }
+    }
+
     createPluginWrapper(pluginMetadata) {
         const pluginCore = new Core(this.proxy, pluginMetadata);
         const mainAPI = this;
@@ -979,7 +999,14 @@ class PluginAPI {
                 
                 return mainAPI.pluginInstances.get(targetPluginName) || null;
             },
-            
+
+            // Set a config value on another loaded plugin (through its own
+            // schema, so encrypted fields stay encrypted). Returns
+            // { present, ok }. Unlike getPluginInstance this needs no declared
+            // dependency - it only writes a stored value, it exposes nothing.
+            setPluginConfigValue: (targetPluginName, key, value) =>
+                mainAPI._setPluginConfigValue(targetPluginName, key, value),
+
             isOfficial: () => isOfficial,
             
             _cleanup: () => {

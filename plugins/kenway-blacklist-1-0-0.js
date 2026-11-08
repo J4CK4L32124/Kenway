@@ -13,14 +13,23 @@
 
 const https = require('https');
 
+// Plugins that consume a Hypixel API key, and the config field each stores it
+// in. /kenway setallkey writes the key to all of them at once. Each plugin's
+// own command (/bwu setkey, /tabalign setkey) still works independently; this
+// is just a one-shot convenience so a new user sets it in one place.
+const HYPIXEL_KEY_TARGETS = [
+    { plugin: 'bwu',      key: 'main.hypixelApiKey', label: 'BedWars Utilities §7(chat stats)' },
+    { plugin: 'tabalign', key: 'apiKey',             label: 'Tablist Alignment §7(tab stats)' },
+];
+
 module.exports = (api) => {
     api.metadata({
         name: 'kenway',
         displayName: 'Kenway Blacklist',
         prefix: '§5KB',
-        version: '1.0.0',
+        version: '1.1.0',
         author: 'Kenway',
-        description: 'Syncs Urchin tag hits into Kenway\'s own blacklist and lets keyholders submit direct reports.',
+        description: 'Syncs Urchin tag hits into Kenway\'s own blacklist, lets keyholders submit direct reports, and sets the Hypixel API key across plugins (/kenway setallkey).',
     });
 
     const kenway = new KenwayBlacklistPlugin(api);
@@ -69,6 +78,11 @@ module.exports = (api) => {
             .description('Look up what Kenway knows about a player')
             .argument('<player>', 'Player to look up')
             .handler((ctx) => kenway.handleLookupCommand(ctx.args.player));
+
+        registry.command('setallkey')
+            .description('Set your Hypixel API key for every plugin that uses one (bwu chat stats + tabalign tab stats)')
+            .argument('<key>', 'Your Hypixel API key')
+            .handler((ctx) => kenway.handleSetAllKeyCommand(ctx.args.key));
     });
 
     kenway.registerHandlers();
@@ -150,6 +164,42 @@ class KenwayBlacklistPlugin {
     handleSetUrlCommand(url) {
         this.api.config.set('apiUrl', url.trim());
         this.sendSuccess(`Kenway API URL set to ${url.trim()}`);
+    }
+
+    handleSetAllKeyCommand(key) {
+        const trimmed = (key || '').trim();
+        if (!trimmed) {
+            this.sendError('Usage: /kenway setallkey <hypixel-api-key>');
+            return;
+        }
+
+        if (typeof this.api.setPluginConfigValue !== 'function') {
+            this.sendError('This build is too old for /kenway setallkey - update Kenway, then set keys per plugin with /bwu setkey and /tabalign setkey.');
+            return;
+        }
+
+        let updated = 0;
+        const lines = [];
+        for (const target of HYPIXEL_KEY_TARGETS) {
+            const result = this.api.setPluginConfigValue(target.plugin, target.key, trimmed);
+            if (!result || result.present === false) {
+                lines.push(`§8  – ${target.label} §8(not installed, skipped)`);
+            } else if (result.ok) {
+                updated++;
+                lines.push(`§a  ✔ ${target.label}`);
+            } else {
+                lines.push(`§c  ✘ ${target.label} §8(${result.error || 'write failed'})`);
+            }
+        }
+
+        if (updated > 0) {
+            this.sendSuccess(`Hypixel API key applied to ${updated} plugin${updated === 1 ? '' : 's'} - takes effect immediately, no restart:`);
+        } else {
+            this.sendError('No key-using plugins were updated:');
+        }
+        for (const line of lines) {
+            this.api.chat(`${this.getPrefix()} ${line}`);
+        }
     }
 
     async handleReportCommand(player, reasonWords) {

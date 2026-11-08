@@ -34,6 +34,8 @@ npm start
 
 All commands use the format `/module command [args]`. Use `/proxy help` to get started.
 
+**📖 See [COMMANDS.md](COMMANDS.md) for the full, friend-friendly command reference** (key setup, stats, denicking, and every plugin's commands).
+
 ### Core Proxy Commands
 
 - `/proxy help` - Show all proxy commands
