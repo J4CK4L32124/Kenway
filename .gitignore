@@ -4,11 +4,14 @@ node_modules/
 
 # Build output (the exe ships via GitHub Releases, not git)
 build/
+installer/Output/
 
-# Per-user runtime data and SECRETS — never publish these
-auth_cache/
-config/
-data/
+# Per-user runtime data and SECRETS — never publish these.
+# Anchored to the repo root so they do NOT match plugin subfolders like
+# plugins/bw-utilities-src/config/ (which must ship).
+/auth_cache/
+/config/
+/data/
 *.key
 *.key.txt
 kenway-previous.exe
